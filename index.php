@@ -1,3 +1,11 @@
+<?php
+error_reporting(0);
+ $arm_ip = $_GET['ip'] ;
+if(is_null($arm_ip)){
+    $arm_ip = "no_arm";
+}
+?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,8 +16,8 @@
     <script src="blockly/msg/js/en.js"></script>
 </head>
 <body>
-    <h1>Blockly Robotic Arm Control</h1>
-    <div id="blocklyDiv" style="height: 480px; width: 1000px;"></div>
+    <h1>Blockly Robotic Arm Control <?php echo $arm_ip ?></h1>
+    <div id="blocklyDiv" style="height: 640px; width: 1000px;"></div>
     <xml id="toolbox" style="display: none">
         <category name="Arm Control" colour="120">
         <block type="move_arm"></block>
@@ -30,6 +38,8 @@
     <button onclick="loadWorkspace()">Load</button>
 
     <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
+
+    <p id="arm_ip"><?php echo $arm_ip ?></p>
     <script>
         var workspace = Blockly.inject('blocklyDiv', {
             toolbox: document.getElementById('toolbox')
