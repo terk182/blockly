@@ -20,6 +20,8 @@
             <block type="set_zero"></block>
             <block type="joint_angles"></block>
             <block type="inverse_kinematics"></block>
+            <block type="controls_for"></block>
+            <block type="controls_whileUntil"></block>
         </category>
     </xml>
 
@@ -184,6 +186,76 @@
                 "helpUrl": ""
             }
         ]);
+        // บล็อกสำหรับการทำซ้ำ (For loop)
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_for",
+            "message0": "for %1 from %2 to %3 by %4",
+            "args0": [
+                {
+                    "type": "field_variable",
+                    "name": "VAR",
+                    "variable": "i"
+                },
+                {
+                    "type": "input_value",
+                    "name": "FROM",
+                    "check": "Number"
+                },
+                {
+                    "type": "input_value",
+                    "name": "TO",
+                    "check": "Number"
+                },
+                {
+                    "type": "input_value",
+                    "name": "BY",
+                    "check": "Number"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 120,
+            "tooltip": "Repeats from a start number to an end number by a specified step.",
+            "helpUrl": "",
+            "inputsInline": true,
+            "extensions": ["contextMenu_newGetVariableBlock"]
+        }]);
+        // บล็อกสำหรับการทำซ้ำ (While loop)
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_whileUntil",
+            "message0": "while %1",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "CONDITION",
+                    "check": "Boolean"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 210,
+            "tooltip": "Repeats while a condition is true.",
+            "helpUrl": ""
+        }]);
+        // การแปลงบล็อก 'while loop' เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_whileUntil'] = function(block) {
+            var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'false';
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            
+            var code = `while (${condition}) {\n${branch}}\n`;
+            return code;
+        };
+        // การแปลงบล็อก 'for loop' เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_for'] = function(block) {
+            var variable = Blockly.JavaScript.variableDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+            var from = Blockly.JavaScript.valueToCode(block, 'FROM', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var to = Blockly.JavaScript.valueToCode(block, 'TO', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var by = Blockly.JavaScript.valueToCode(block, 'BY', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+            
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `for (var ${variable} = ${from}; ${variable} <= ${to}; ${variable} += ${by}) {\n${branch}}\n`;
+            return code;
+        };
         Blockly.JavaScript['move_arm'] = function(block) {
             var theta1 = block.getFieldValue('THETA1');
             var theta2 = block.getFieldValue('THETA2');
