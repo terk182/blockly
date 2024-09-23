@@ -30,6 +30,7 @@ if(is_null($arm_ip)){
             <block type="joint_angles"></block>
             <block type="inverse_kinematics"></block>
             <block type="controls_for"></block>
+            <block type="int_value"></block>
             <block type="controls_whileUntil"></block>
         </category>
     </xml>
@@ -276,7 +277,22 @@ if(is_null($arm_ip)){
             var code = `sendHomePositionCommand();\n`;
             return code;
         };
-
+// สร้างบล็อก Int
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "int_value",
+            "message0": "int %1",
+            "args0": [
+                {
+                    "type": "field_number",
+                    "name": "INT",
+                    "value": 0
+                }
+            ],
+            "output": "Number",
+            "colour": 230,
+            "tooltip": "An integer value",
+            "helpUrl": ""
+        }]);
         // Block for specifying joint angles
         Blockly.defineBlocksWithJsonArray([
             {
@@ -348,7 +364,12 @@ if(is_null($arm_ip)){
             var code = `${x}, ${y}, ${z}, ${speed}, ${acceleration}`;
             return [code, Blockly.JavaScript.ORDER_NONE];
         };
-
+        // การแปลงบล็อก Int เป็นโค้ด JavaScript
+        Blockly.JavaScript['int_value'] = function(block) {
+            var intValue = block.getFieldValue('INT');
+            var code = `${intValue}`;
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
         function executeCode() {
           
 
