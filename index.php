@@ -13,14 +13,15 @@ if(is_null($arm_ip)){
     <script src="blockly/blockly_compressed.js"></script>
     <script src="blockly/blocks_compressed.js"></script>
     <script src="blockly/javascript_compressed.js"></script>
-    <script src="blockly/msg/js/en.js"></script>
+    <script src="blockly/msg/en.js"></script>
 </head>
 <body>
     <h1>Blockly Robotic Arm Control <?php echo $arm_ip ?></h1>
     <div id="blocklyDiv" style="height: 640px; width: 1000px;"></div>
     <xml id="toolbox" style="display: none">
         <category name="Arm Control" colour="120">
-        <block type="move_arm"></block>
+          
+            <block type="move_arm"></block>
             <block type="gripper_value_control"></block>
             <block type="gripper_on_off_control"></block>
             <block type="delay_block"></block>
@@ -41,6 +42,8 @@ if(is_null($arm_ip)){
 
     <p id="arm_ip"><?php echo $arm_ip ?></p>
     <script>
+
+        const arm_ip = document.getElementById('arm_ip').innerHTML;
         var workspace = Blockly.inject('blocklyDiv', {
             toolbox: document.getElementById('toolbox')
         });
@@ -72,25 +75,7 @@ if(is_null($arm_ip)){
     reader.readAsText(file);
         }
 
-        // บล็อกสำหรับการเคลื่อนที่ของแขนกล
-        Blockly.defineBlocksWithJsonArray([
-            {
-                "type": "move_arm",
-                "message0": "Move arm to theta1 %1 theta2 %2 theta3 %3 speed %4 acceleration %5",
-                "args0": [
-                    {"type": "field_number", "name": "THETA1", "value": 0},
-                    {"type": "field_number", "name": "THETA2", "value": 0},
-                    {"type": "field_number", "name": "THETA3", "value": 0},
-                    {"type": "field_number", "name": "SPEED", "value": 1000},
-                    {"type": "field_number", "name": "ACCELERATION", "value": 500}
-                ],
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 120,
-                "tooltip": "Move robotic arm with speed and acceleration",
-                "helpUrl": ""
-            }
-        ]);
+
         Blockly.defineBlocksWithJsonArray([
             {
                 "type": "move_arm",
@@ -266,15 +251,7 @@ if(is_null($arm_ip)){
             var code = `for (var ${variable} = ${from}; ${variable} <= ${to}; ${variable} += ${by}) {\n${branch}}\n`;
             return code;
         };
-        Blockly.JavaScript['move_arm'] = function(block) {
-            var theta1 = block.getFieldValue('THETA1');
-            var theta2 = block.getFieldValue('THETA2');
-            var theta3 = block.getFieldValue('THETA3');
-            var speed = block.getFieldValue('SPEED');
-            var acceleration = block.getFieldValue('ACCELERATION');
-            var code = `sendMoveCommand(${theta1}, ${theta2}, ${theta3}, ${speed}, ${acceleration});\n`;
-            return code;
-        };
+
 
         Blockly.JavaScript['gripper_value_control'] = function(block) {
             var gripper = block.getFieldValue('GRIPPER');
@@ -338,15 +315,16 @@ if(is_null($arm_ip)){
             }
         ]);
 
+        // การแปลงบล็อก 'move_arm' เป็นโค้ด JavaScript
         Blockly.JavaScript['move_arm'] = function(block) {
             var mode = block.getFieldValue('MODE');
             var values = Blockly.JavaScript.valueToCode(block, 'VALUES', Blockly.JavaScript.ORDER_ATOMIC);
 
             var code = '';
             if (mode === 'JOINT') {
-                code = `sendMoveJointCommand(${values});\n`;
+                code = `sendMoveCommand(${values});\n`;
             } else if (mode === 'IK') {
-                code = `sendMoveIKCommand(${values});\n`;
+                code = `sendMoveCommand(${values});\n`;
             }
             return code;
         };
@@ -372,12 +350,17 @@ if(is_null($arm_ip)){
         };
 
         function executeCode() {
-            var code = Blockly.JavaScript.workspaceToCode(workspace);
-            eval(code);
+          
+
+            var xml1 = Blockly.Xml.workspaceToDom(workspace);
+            var xmlText1 = Blockly.Xml.domToPrettyText(xml1);
+            console.log(xmlText1);
         }
 
         function sendMoveCommand(theta1, theta2, theta3, speed, acceleration) {
-            fetch(`http://<ESP32-IP-ADDRESS>/blocklyMove?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}`)
+            console.log("sendMoveCommand");
+            console.log(arm_ip);
+            fetch(`http://${arm_ip}/move?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}`)
                 .then(response => {
                     if (response.ok) {
                         console.log("Move command sent successfully!");
@@ -388,7 +371,9 @@ if(is_null($arm_ip)){
         }
 
         function sendGripperValueCommand(gripper) {
-            fetch(`http://<ESP32-IP-ADDRESS>/controlGripper?gripper=${gripper}`)
+            console.log("sendGripperValueCommand");
+            console.log(arm_ip);
+            fetch(`http://${arm_ip}/controlGripper?gripper=${gripper}`)
                 .then(response => {
                     if (response.ok) {
                         console.log("Gripper command sent successfully!");
@@ -405,7 +390,9 @@ if(is_null($arm_ip)){
         }
 
         function sendHomePositionCommand() {
-            fetch(`http://<ESP32-IP-ADDRESS>/homePosition`)
+            console.log("sendHomePositionCommand");
+            console.log(arm_ip);
+            fetch(`http://${arm_ip}/homePosition`)
                 .then(response => {
                     if (response.ok) {
                         console.log("Moved to Home Position successfully!");
