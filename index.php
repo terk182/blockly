@@ -43,7 +43,7 @@ if(is_null($arm_ip)){
 
     <p id="arm_ip"><?php echo $arm_ip ?></p>
     <script>
-
+        var ARM_MODE ="JOINT"
         const esp32IP = document.getElementById('arm_ip').innerHTML;
         var workspace = Blockly.inject('blocklyDiv', {
             toolbox: document.getElementById('toolbox')
@@ -448,10 +448,10 @@ function blockToObj(block) {
 }
 
 // ฟังก์ชันสำหรับส่งคำสั่งการเคลื่อนที่ไปยัง ESP32
-function sendMoveCommand(theta1, theta2, theta3, speed, acceleration) {
+function sendMoveCommand(theta1, theta2, theta3, speed, acceleration,mode) {
     console.log("sendMoveCommand");
     console.log(esp32IP);
-    let txt = `http://${esp32IP}/move?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}`;
+    let txt = `http://${esp32IP}/move?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}&mode=${mode}`;
     console.log(txt);
 
 
@@ -500,13 +500,20 @@ function executeCommands(commandObject) {
         console.log(commandObject[i]);
            switch (commandObject[i].type) {
         case 'move_arm':
+           
+            ARM_MODE =commandObject[i].fields.MODE;
             //const { theta1, theta2, theta3, speed, acceleration } = commandObject.values;
             //sendMoveCommand(theta1, theta2, theta3, speed, acceleration);
             break;
         case 'joint_angles':
             console.log(commandObject[i].fields);
             const { THETA1, THETA2, THETA3, SPEED, ACCELERATION } = commandObject[i].fields;
-            sendMoveCommand(THETA1, THETA2, THETA3, SPEED, ACCELERATION);
+            sendMoveCommand(THETA1, THETA2, THETA3, SPEED, ACCELERATION,ARM_MODE);
+            break;
+        case 'inverse_kinematics':
+            console.log(commandObject[i].fields);
+            const { X, Y, Z, t, a } = commandObject[i].fields;
+            sendMoveCommand(commandObject[i].fields.X, commandObject[i].fields.Y, commandObject[i].fields.Z, commandObject[i].fields.SPEED, commandObject[i].fields.ACCELERATION,ARM_MODE);
             break;
         case 'delay_block':
             const { DELAY } = commandObject[i].fields;
