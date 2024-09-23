@@ -43,7 +43,7 @@ if(is_null($arm_ip)){
     <p id="arm_ip"><?php echo $arm_ip ?></p>
     <script>
 
-        const arm_ip = document.getElementById('arm_ip').innerHTML;
+        const esp32IP = document.getElementById('arm_ip').innerHTML;
         var workspace = Blockly.inject('blocklyDiv', {
             toolbox: document.getElementById('toolbox')
         });
@@ -354,34 +354,13 @@ if(is_null($arm_ip)){
 
             var xml1 = Blockly.Xml.workspaceToDom(workspace);
             var xmlText1 = Blockly.Xml.domToPrettyText(xml1);
-            console.log(xmlText1);
+            var blockObj = xmlToObj(xmlText1);
+            console.log(blockObj);
+            executeCommands(blockObj);
         }
 
-        function sendMoveCommand(theta1, theta2, theta3, speed, acceleration) {
-            console.log("sendMoveCommand");
-            console.log(arm_ip);
-            fetch(`http://${arm_ip}/move?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}`)
-                .then(response => {
-                    if (response.ok) {
-                        console.log("Move command sent successfully!");
-                    } else {
-                        console.error("Failed to send move command.");
-                    }
-                });
-        }
-
-        function sendGripperValueCommand(gripper) {
-            console.log("sendGripperValueCommand");
-            console.log(arm_ip);
-            fetch(`http://${arm_ip}/controlGripper?gripper=${gripper}`)
-                .then(response => {
-                    if (response.ok) {
-                        console.log("Gripper command sent successfully!");
-                    } else {
-                        console.error("Failed to send gripper command.");
-                    }
-                });
-        }
+        
+   
 
         function sendDelayCommand(delay) {
             setTimeout(() => {
@@ -391,8 +370,8 @@ if(is_null($arm_ip)){
 
         function sendHomePositionCommand() {
             console.log("sendHomePositionCommand");
-            console.log(arm_ip);
-            fetch(`http://${arm_ip}/homePosition`)
+            console.log(esp32IP);
+            fetch(`http://${esp32IP}/homePosition`)
                 .then(response => {
                     if (response.ok) {
                         console.log("Moved to Home Position successfully!");
@@ -401,6 +380,138 @@ if(is_null($arm_ip)){
                     }
                 });
         }
+        // ฟังก์ชันที่ใช้ในการแปลง XML เป็น Object
+function xmlToObj(xmlText) {
+    var parser = new DOMParser();
+    var xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+    var workspace = new Blockly.Workspace();
+    Blockly.Xml.domToWorkspace(xmlDoc.documentElement, workspace);
+
+    var blocks = workspace.getAllBlocks(false);
+    var blockArray = blocks.map(block => blockToObj(block));
+
+    return blockArray;
+}
+
+// ฟังก์ชันที่ใช้ในการแปลงแต่ละบล็อกเป็น Object
+function blockToObj(block) {
+    var obj = {
+        type: block.type,
+        id: block.id,
+        fields: {},
+        inputs: {},
+        next: null
+    };
+
+    // ดึงข้อมูลฟิลด์ของบล็อก
+    block.inputList.forEach(input => {
+        input.fieldRow.forEach(field => {
+            obj.fields[field.name] = field.getValue();
+        });
+    });
+
+    // ดึงข้อมูลอินพุตของบล็อก
+    block.inputList.forEach(input => {
+        if (input.connection && input.connection.targetBlock()) {
+            obj.inputs[input.name] = blockToObj(input.connection.targetBlock());
+        }
+    });
+
+    // ดึงข้อมูลบล็อกถัดไป
+    if (block.getNextBlock()) {
+        obj.next = blockToObj(block.getNextBlock());
+    }
+
+    return obj;
+}
+
+// ฟังก์ชันสำหรับส่งคำสั่งการเคลื่อนที่ไปยัง ESP32
+function sendMoveCommand(theta1, theta2, theta3, speed, acceleration) {
+    console.log("sendMoveCommand");
+    console.log(esp32IP);
+    let txt = `http://${esp32IP}/move?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}&speed=${speed}&acceleration=${acceleration}`;
+    console.log(txt);
+
+
+    fetch(txt, {
+            method: 'GET',
+            mode: 'no-cors'
+        }).then(response => {
+            console.log("Command sent successfully!");
+        }).catch(error => {
+            console.error("Failed to send command:", error);
+        });
+
+   
+}
+
+// ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
+function sendGripperValueCommand(gripperValue) {
+
+        let  url = `http://${esp32IP}/controlGripper?gripper=${gripperValue}`
+        fetch(url, {
+            method: 'GET',
+            mode: 'no-cors'
+        }).then(response => {
+            console.log("Command sent successfully!");
+        }).catch(error => {
+            console.error("Failed to send command:", error);
+        });
+}
+// ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
+function sendDelayValueCommand(DelayValue) {
+
+let  url = `http://${esp32IP}/delay?time=${DelayValue}`
+fetch(url, {
+    method: 'GET',
+    mode: 'no-cors'
+}).then(response => {
+    console.log("Command sent successfully!");
+}).catch(error => {
+    console.error("Failed to send command:", error);
+});
+}
+// ฟังก์ชันสำหรับดำเนินการตาม Object ที่แปลงมาจาก XML
+function executeCommands(commandObject) {
+    if (!commandObject) return;
+    for(let i = 0;i< commandObject.length;i++){
+        console.log(commandObject[i]);
+           switch (commandObject[i].type) {
+        case 'move_arm':
+            //const { theta1, theta2, theta3, speed, acceleration } = commandObject.values;
+            //sendMoveCommand(theta1, theta2, theta3, speed, acceleration);
+            break;
+        case 'joint_angles':
+            console.log(commandObject[i].fields);
+            const { THETA1, THETA2, THETA3, SPEED, ACCELERATION } = commandObject[i].fields;
+            sendMoveCommand(THETA1, THETA2, THETA3, SPEED, ACCELERATION);
+            break;
+        case 'delay_block':
+            const { DELAY } = commandObject[i].fields;
+            sendDelayValueCommand(DELAY);
+            return; // หยุดการดำเนินการจนกว่าจะครบเวลาหน่วงเวลา
+
+        case 'gripper_value_control':
+            sendGripperValueCommand(commandObject[i].gripper);
+            break;
+
+        case 'gripper_on_off_control':
+            const gripperValue = commandObject[i].gripperState === "OPEN" ? 0 : 180;
+            sendGripperValueCommand(gripperValue);
+            break;
+
+        default:
+           // console.warn("Unknown command type:", commandObject.type);
+    }
+
+    //ดำเนินการบล็อกถัดไป
+    executeCommands(commandObject.next);
+    }
+    
+ 
+}
+
     </script>
 </body>
 </html>
