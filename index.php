@@ -30,8 +30,11 @@ if(is_null($arm_ip)){
             <block type="joint_angles"></block>
             <block type="inverse_kinematics"></block>
             <block type="controls_for"></block>
+            <block type="controls_if_high_low"></block>
             <block type="int_value"></block>
             <block type="controls_whileUntil"></block>
+            <block type="input_block_number"></block>
+            <block type="output_block_number"></block>
         </category>
     </xml>
 
@@ -233,6 +236,104 @@ if(is_null($arm_ip)){
             "tooltip": "Repeats while a condition is true.",
             "helpUrl": ""
         }]);
+
+        // บล็อกสำหรับรับ Input
+// บล็อกสำหรับรับ Input แบบ Number
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "input_block_number",
+            "message0": "Input number %1",
+            "args0": [
+                {
+                    "type": "field_number",
+                    "name": "INPUT_VALUE",
+                    "value": 0
+                }
+            ],
+            "output": "Number",
+            "colour": 160,
+            "tooltip": "Receive input value as a number",
+            "helpUrl": ""
+        }]);
+
+
+        // บล็อกสำหรับส่ง Output
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "output_block_number",
+            "message0": "Output number %1",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "OUTPUT_VALUE",
+                    "check": "Number"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 230,
+            "tooltip": "Send output value as a number",
+            "helpUrl": ""
+        }]);
+
+        // สร้างบล็อก 'if'
+        // สร้างบล็อก 'if' ที่ตรวจสอบค่าเป็น HIGH หรือ LOW
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_if_high_low",
+            "message0": "if input %1 is %2 then",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "INPUT"
+                },
+                {
+                    "type": "field_dropdown",
+                    "name": "STATE",
+                    "options": [
+                        ["HIGH", "HIGH"],
+                        ["LOW", "LOW"]
+                    ]
+                }
+            ],
+            "message1": "do %1",
+            "args1": [
+                {
+                    "type": "input_statement",
+                    "name": "DO"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 210,
+            "tooltip": "If the input is HIGH or LOW, then do some statements",
+            "helpUrl": ""
+        }]);
+
+        // การแปลงบล็อก 'if' เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_if_high_low'] = function(block) {
+            var input = Blockly.JavaScript.valueToCode(block, 'INPUT', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var state = block.getFieldValue('STATE');
+            
+            // ตรวจสอบเงื่อนไขที่เลือก (HIGH หรือ LOW)
+            var condition = (state === 'HIGH') ? `${input} === 1` : `${input} === 0`;
+            
+            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `if (${condition}) {\n${statements_do}}\n`;
+            return code;
+        };
+
+
+        // การแปลงบล็อก Input เป็นโค้ด JavaScript
+        Blockly.JavaScript['input_block_number'] = function(block) {
+            var inputValue = block.getFieldValue('INPUT_VALUE');
+            var code = `${inputValue}`;
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        // การแปลงบล็อก Output เป็นโค้ด JavaScript
+        Blockly.JavaScript['output_block_number'] = function(block) {
+            var outputValue = Blockly.JavaScript.valueToCode(block, 'OUTPUT_VALUE', Blockly.JavaScript.ORDER_ATOMIC);
+            var code = `console.log(${outputValue});\n`; // คุณสามารถปรับเปลี่ยนโค้ดนี้ได้ตามความต้องการของคุณ
+            return code;
+        };
         // การแปลงบล็อก 'while loop' เป็นโค้ด JavaScript
         Blockly.JavaScript['controls_whileUntil'] = function(block) {
             var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'false';
