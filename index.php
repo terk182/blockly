@@ -64,6 +64,8 @@ if(is_null($arm_ip)){
             <block type="joint_angles"></block>
             <block type="input_block_number"></block>
             <block type="output_block"></block>
+            <block type="delay_block"></block>
+            
         </category>
         <category name="เงือนไข" colour="120">
             
@@ -815,7 +817,19 @@ fetch(url, {
     console.error("Failed to send command:", error);
 });
 }
+// ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
+function sendOutputValueCommand(input,state) {
 
+let  url = `http://${esp32IP}/output?io=${input}&state=${state}`
+fetch(url, {
+    method: 'GET',
+    mode: 'no-cors'
+}).then(response => {
+    console.log("Command sent successfully!");
+}).catch(error => {
+    console.error("Failed to send command:", error);
+});
+}
 function sendzeroValueCommand() {
 
 let  url = `http://${esp32IP}/zero`
@@ -842,7 +856,7 @@ fetch(url, {
 });
 }
 // ฟังก์ชันสำหรับดำเนินการตาม Object ที่แปลงมาจาก XML
-function executeCommands(commandObject) {
+async function executeCommands(commandObject) {
     if (!commandObject) return;
     for(let i = 0;i< commandObject.length;i++){
         console.log(commandObject[i]);
@@ -854,45 +868,77 @@ function executeCommands(commandObject) {
             //sendMoveCommand(theta1, theta2, theta3, speed, acceleration);
             break;
         case 'joint_angles':
-            console.log(commandObject[i].fields);
+          
             const { THETA1, THETA2, THETA3, SPEED, ACCELERATION } = commandObject[i].fields;
-            sendMoveCommand(THETA1, THETA2, THETA3, SPEED, ACCELERATION,ARM_MODE);
+            await  sendMoveCommand(THETA1, THETA2, THETA3, SPEED, ACCELERATION,ARM_MODE);
             break;
         case 'inverse_kinematics':
-            console.log(commandObject[i].fields);
+    
             const { X, Y, Z, t, a } = commandObject[i].fields;
-            sendMoveCommand(commandObject[i].fields.X, commandObject[i].fields.Y, commandObject[i].fields.Z, commandObject[i].fields.SPEED, commandObject[i].fields.ACCELERATION,ARM_MODE);
+            await sendMoveCommand(commandObject[i].fields.X, commandObject[i].fields.Y, commandObject[i].fields.Z, commandObject[i].fields.SPEED, commandObject[i].fields.ACCELERATION,ARM_MODE);
             break;
         case 'delay_block':
             const { DELAY } = commandObject[i].fields;
-            sendDelayValueCommand(DELAY);
+            await sendDelayValueCommand(DELAY);
             return; // หยุดการดำเนินการจนกว่าจะครบเวลาหน่วงเวลา
 
         case 'gripper_value_control':
-            sendGripperValueCommand(commandObject[i].gripper);
+            await sendGripperValueCommand(commandObject[i].gripper);
             break;
 
         case 'gripper_on_off_control':
             const gripperValue = commandObject[i].gripperState === "OPEN" ? 0 : 180;
-            sendGripperValueCommand(gripperValue);
+            await sendGripperValueCommand(gripperValue);
             break;
         case 'set_zero':
-            sendzeroValueCommand();
+            await sendzeroValueCommand();
             break;   
         case 'home_position':
-            sendzeroValueCommand();
+            await sendzeroValueCommand();
             break;  
         case 'controls_for':
-            sendForCommand(commandObject[i].inputs.BY.fields.INT,commandObject[i].inputs.FROM.fields.INT,commandObject[i].inputs.TO.fields.INT);
+            await sendForCommand(commandObject[i].inputs.BY.fields.INT,commandObject[i].inputs.FROM.fields.INT,commandObject[i].inputs.TO.fields.INT);
             break;  //   
         case 'controls_if_high_low':
-            console.log(commandObject[i].inputs.INPUT.fields.INT);
-            console.log(commandObject[i].fields.STATE);
+                // ตรวจสอบค่าที่กำหนดว่าเป็น HIGH หรือ LOW
+                let state = commandObject[i].fields.STATE;
+                let input = commandObject[i].inputs.INPUT.fields.INT || 0; // รับค่า input
+
+                // แปลง HIGH เป็น 1 และ LOW เป็น 0 เพื่อให้ตรงกับเงื่อนไข
+                let conditionMet = (state === 'HIGH' && input === 1) || (state === 'LOW' && input === 0);
+
+                // ถ้าเงื่อนไขตรง ให้ทำการ execute บล็อก 'DO'
+                if (conditionMet) {
+                    await executeCommands(commandObject[i].inputs.DO);
+                }
             break;  // 
         case 'output_block':
-            console.log(commandObject[i].inputs.OUTPUT_VALUE.fields.INT);
-            console.log(commandObject[i].fields.STATE);
+    
+            await sendOutputValueCommand(commandObject[i].inputs.OUTPUT_VALUE.fields.INT,commandObject[i].fields.STATE);
             break;  //                           
+        case 'controls_repeat_ext':
+            let times = commandObject[i].inputs.TIMES.fields.INT;
+            let DO = commandObject[i].inputs.DO;
+                for (let o = 0; o < times; o++) {
+                    console.log("loop");
+                    console.log(DO);
+                    await executeCommands(DO);
+                }
+                break;
+            break;  //    
+         case 'controls_repeat_boolean':
+                // รับค่าเงื่อนไขที่กำหนดว่าเป็น TRUE หรือ FALSE
+                 let condition = commandObject[i].fields.CONDITION === "TRUE";
+                 let DO1 = commandObject[i].inputs.DO;
+                // // วนลูปตราบใดที่ condition ยังคงเป็น TRUE
+                while (condition) {
+                    console.log("loop->");
+                    console.log(DO1);
+                    await executeCommands(DO1);
+                    // ตรวจสอบเงื่อนไขทุกครั้งหลังจากดำเนินการ เพื่ออัปเดตการวนลูป
+                    condition = commandObject[i].fields.CONDITION === "TRUE"; 
+                }     
+            break;  //                      
         default:
            // console.warn("Unknown command type:", commandObject.type);
     }
