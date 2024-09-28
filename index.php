@@ -14,9 +14,45 @@ if(is_null($arm_ip)){
     <script src="blockly/blocks_compressed.js"></script>
     <script src="blockly/javascript_compressed.js"></script>
     <script src="blockly/msg/en.js"></script>
+    <style>
+        /* กำหนดสไตล์สำหรับปุ่ม */
+        .control-button {
+            background-color: #4CAF50; /* สีพื้นหลัง */
+            border: none; /* ไม่มีขอบ */
+            color: white; /* สีข้อความ */
+            padding: 15px 30px; /* ระยะห่างภายในปุ่ม */
+            text-align: center; /* จัดวางข้อความให้อยู่ตรงกลาง */
+            text-decoration: none; /* ไม่มีเส้นใต้ */
+            display: inline-block; /* จัดให้อยู่ในแนวเดียวกัน */
+            font-size: 16px; /* ขนาดตัวอักษร */
+            margin: 10px 5px; /* ระยะห่างระหว่างปุ่ม */
+            cursor: pointer; /* เปลี่ยนเคอร์เซอร์เมื่อชี้ที่ปุ่ม */
+            border-radius: 12px; /* มุมโค้งมน */
+            transition: background-color 0.3s, transform 0.3s; /* การเปลี่ยนสีและการเคลื่อนไหว */
+        }
+
+        /* สไตล์เมื่อมีการชี้ที่ปุ่ม */
+        .control-button:hover {
+            background-color: #45a049; /* สีเมื่อชี้ */
+            transform: scale(1.1); /* ขยายปุ่มเมื่อชี้ */
+        }
+
+        /* สไตล์เมื่อกดปุ่ม */
+        .control-button:active {
+            background-color: #3e8e41; /* สีเมื่อกด */
+            transform: scale(0.9); /* ย่อปุ่มเมื่อกด */
+        }
+    </style>
 </head>
 <body>
     <h1>Blockly Robotic Arm Control <?php echo $arm_ip ?></h1>
+
+    
+    <button class="control-button" onclick="executeCode()">Run Code</button>
+    <button class="control-button" onclick="saveWorkspace()">Save</button>
+    <button class="control-button" onclick="loadWorkspace()">Load</button>
+
+    <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
     <div id="blocklyDiv" style="height: 640px; width: 1000px;"></div>
     <xml id="toolbox" style="display: none">
         <category name="Arm Control" colour="120">
@@ -34,15 +70,10 @@ if(is_null($arm_ip)){
             <block type="int_value"></block>
             <block type="controls_whileUntil"></block>
             <block type="input_block_number"></block>
-            <block type="output_block_number"></block>
+            <block type="output_block"></block>
         </category>
     </xml>
 
-    <button onclick="executeCode()">Run Code</button>
-    <button onclick="saveWorkspace()">Save</button>
-    <button onclick="loadWorkspace()">Load</button>
-
-    <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
 
     <p id="arm_ip"><?php echo $arm_ip ?></p>
     <script>
@@ -256,21 +287,28 @@ if(is_null($arm_ip)){
         }]);
 
 
-        // บล็อกสำหรับส่ง Output
+// บล็อกสำหรับส่ง Output ที่สามารถเลือกรูปแบบเป็น int หรือ on/off ได้
         Blockly.defineBlocksWithJsonArray([{
-            "type": "output_block_number",
-            "message0": "Output number %1",
+            "type": "output_block",
+            "message0": "Output %1 as %2",
             "args0": [
                 {
                     "type": "input_value",
-                    "name": "OUTPUT_VALUE",
-                    "check": "Number"
+                    "name": "OUTPUT_VALUE"
+                },
+                {
+                    "type": "field_dropdown",
+                    "name": "STATE",
+                    "options": [
+                        ["HIGH", "HIGH"],
+                        ["LOW", "LOW"]
+                    ]
                 }
             ],
             "previousStatement": null,
             "nextStatement": null,
             "colour": 230,
-            "tooltip": "Send output value as a number",
+            "tooltip": "Send output value as an integer or on/off",
             "helpUrl": ""
         }]);
 
@@ -329,9 +367,18 @@ if(is_null($arm_ip)){
         };
 
         // การแปลงบล็อก Output เป็นโค้ด JavaScript
-        Blockly.JavaScript['output_block_number'] = function(block) {
+        Blockly.JavaScript['output_block'] = function(block) {
             var outputValue = Blockly.JavaScript.valueToCode(block, 'OUTPUT_VALUE', Blockly.JavaScript.ORDER_ATOMIC);
-            var code = `console.log(${outputValue});\n`; // คุณสามารถปรับเปลี่ยนโค้ดนี้ได้ตามความต้องการของคุณ
+            var outputType = block.getFieldValue('OUTPUT_TYPE');
+
+            // ตรวจสอบว่าผู้ใช้เลือก 'int' หรือ 'on/off'
+            var code = '';
+            if (outputType === 'INT') {
+                code = `console.log(${outputValue});\n`; // สำหรับ output เป็นจำนวนเต็ม (int)
+            } else if (outputType === 'ONOFF') {
+                var onOffValue = (outputValue == 1) ? 'ON' : 'OFF'; // แปลงค่าเป็น ON หรือ OFF
+                code = `console.log("${onOffValue}");\n`;
+            }
             return code;
         };
         // การแปลงบล็อก 'while loop' เป็นโค้ด JavaScript
