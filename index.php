@@ -53,24 +53,31 @@ if(is_null($arm_ip)){
     <button class="control-button" onclick="loadWorkspace()">Load</button>
 
     <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
-    <div id="blocklyDiv" style="height: 640px; width: 1000px;"></div>
+    <div id="blocklyDiv" style="height: 540px; width: 1000px;"></div>
     <xml id="toolbox" style="display: none">
-        <category name="Arm Control" colour="120">
-          
+        <category name="การควบคุม" colour="200">
             <block type="move_arm"></block>
             <block type="gripper_value_control"></block>
             <block type="gripper_on_off_control"></block>
-            <block type="delay_block"></block>
             <block type="home_position"></block>
             <block type="set_zero"></block>
             <block type="joint_angles"></block>
-            <block type="inverse_kinematics"></block>
-            <block type="controls_for"></block>
-            <block type="controls_if_high_low"></block>
-            <block type="int_value"></block>
-            <block type="controls_whileUntil"></block>
             <block type="input_block_number"></block>
             <block type="output_block"></block>
+        </category>
+        <category name="เงือนไข" colour="120">
+            
+            <block type="controls_for"></block>
+            <block type="controls_if_high_low"></block>
+            <block type="controls_if_input_high_low"></block>
+           
+            <block type="controls_repeat_ext"></block>
+            <block type="controls_repeat_boolean"></block>
+            <block type="controls_while"></block>
+       
+        </category>
+        <category name="ตัวแปร" colour="360">
+            <block type="int_value"></block>
         </category>
     </xml>
 
@@ -267,6 +274,30 @@ if(is_null($arm_ip)){
             "tooltip": "Repeats while a condition is true.",
             "helpUrl": ""
         }]);
+        // สร้างบล็อกสำหรับ while loop
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_while",
+            "message0": "while %1",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "CONDITION",
+                    "check": "Boolean"
+                }
+            ],
+            "message1": "do %1",
+            "args1": [
+                {
+                    "type": "input_statement",
+                    "name": "DO"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 210,
+            "tooltip": "Repeat while the condition is true",
+            "helpUrl": ""
+        }]);
 
         // บล็อกสำหรับรับ Input
 // บล็อกสำหรับรับ Input แบบ Number
@@ -344,87 +375,73 @@ if(is_null($arm_ip)){
             "tooltip": "If the input is HIGH or LOW, then do some statements",
             "helpUrl": ""
         }]);
+        // สร้างบล็อกสำหรับ repeat loop
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_repeat_ext",
+            "message0": "repeat %1 times",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "TIMES",
+                    "check": "Number"
+                }
+            ],
+            "message1": "do %1",
+            "args1": [
+                {
+                    "type": "input_statement",
+                    "name": "DO"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 120,
+            "tooltip": "Repeat a set of statements a specific number of times",
+            "helpUrl": ""
+        }]);
 
-        // การแปลงบล็อก 'if' เป็นโค้ด JavaScript
-        Blockly.JavaScript['controls_if_high_low'] = function(block) {
-            var input = Blockly.JavaScript.valueToCode(block, 'INPUT', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            var state = block.getFieldValue('STATE');
-            
-            // ตรวจสอบเงื่อนไขที่เลือก (HIGH หรือ LOW)
-            var condition = (state === 'HIGH') ? `${input} === 1` : `${input} === 0`;
-            
-            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
-            var code = `if (${condition}) {\n${statements_do}}\n`;
-            return code;
-        };
+        // สร้างบล็อกสำหรับ if-else ที่ตรวจสอบ input เป็น HIGH หรือ LOW
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_if_input_high_low",
+            "message0": "if input %1 = %2",
+            "args0": [
+                {
+                    "type": "input_value",
+                    "name": "INPUT",
+                    "check": "String"
+                },
+                {
+                    "type": "field_dropdown",
+                    "name": "COMPARE_VALUE",
+                    "options": [
+                        ["HIGH", "HIGH"],
+                        ["LOW", "LOW"]
+                    ]
+                }
+            ],
+            "message1": "do %1",
+            "args1": [
+                {
+                    "type": "input_statement",
+                    "name": "DO"
+                }
+            ],
+            "message2": "else %1",
+            "args2": [
+                {
+                    "type": "input_statement",
+                    "name": "ELSE"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 210,
+            "tooltip": "If the input value equals HIGH or LOW, execute the corresponding set of statements",
+            "helpUrl": ""
+        }]);
 
 
-        // การแปลงบล็อก Input เป็นโค้ด JavaScript
-        Blockly.JavaScript['input_block_number'] = function(block) {
-            var inputValue = block.getFieldValue('INPUT_VALUE');
-            var code = `${inputValue}`;
-            return [code, Blockly.JavaScript.ORDER_ATOMIC];
-        };
-
-        // การแปลงบล็อก Output เป็นโค้ด JavaScript
-        Blockly.JavaScript['output_block'] = function(block) {
-            var outputValue = Blockly.JavaScript.valueToCode(block, 'OUTPUT_VALUE', Blockly.JavaScript.ORDER_ATOMIC);
-            var outputType = block.getFieldValue('OUTPUT_TYPE');
-
-            // ตรวจสอบว่าผู้ใช้เลือก 'int' หรือ 'on/off'
-            var code = '';
-            if (outputType === 'INT') {
-                code = `console.log(${outputValue});\n`; // สำหรับ output เป็นจำนวนเต็ม (int)
-            } else if (outputType === 'ONOFF') {
-                var onOffValue = (outputValue == 1) ? 'ON' : 'OFF'; // แปลงค่าเป็น ON หรือ OFF
-                code = `console.log("${onOffValue}");\n`;
-            }
-            return code;
-        };
-        // การแปลงบล็อก 'while loop' เป็นโค้ด JavaScript
-        Blockly.JavaScript['controls_whileUntil'] = function(block) {
-            var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'false';
-            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
-            
-            var code = `while (${condition}) {\n${branch}}\n`;
-            return code;
-        };
-        // การแปลงบล็อก 'for loop' เป็นโค้ด JavaScript
-        Blockly.JavaScript['controls_for'] = function(block) {
-            var variable = Blockly.JavaScript.variableDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
-            var from = Blockly.JavaScript.valueToCode(block, 'FROM', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            var to = Blockly.JavaScript.valueToCode(block, 'TO', Blockly.JavaScript.ORDER_ATOMIC) || '0';
-            var by = Blockly.JavaScript.valueToCode(block, 'BY', Blockly.JavaScript.ORDER_ATOMIC) || '1';
-            
-            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
-            var code = `for (var ${variable} = ${from}; ${variable} <= ${to}; ${variable} += ${by}) {\n${branch}}\n`;
-            return code;
-        };
-
-
-        Blockly.JavaScript['gripper_value_control'] = function(block) {
-            var gripper = block.getFieldValue('GRIPPER');
-            var code = `sendGripperValueCommand(${gripper});\n`;
-            return code;
-        };
-
-        Blockly.JavaScript['gripper_on_off_control'] = function(block) {
-            var gripperState = block.getFieldValue('GRIPPER_STATE');
-            var gripperValue = gripperState === "OPEN" ? 0 : 180; // เปิดเป็น 0 และปิดเป็น 180
-            var code = `sendGripperValueCommand(${gripperValue});\n`;
-            return code;
-        };
-
-        Blockly.JavaScript['delay_block'] = function(block) {
-            var delay = block.getFieldValue('DELAY');
-            var code = `sendDelayCommand(${delay});\n`;
-            return code;
-        };
-
-        Blockly.JavaScript['home_position'] = function(block) {
-            var code = `sendHomePositionCommand();\n`;
-            return code;
-        };
+   
 // สร้างบล็อก Int
         Blockly.defineBlocksWithJsonArray([{
             "type": "int_value",
@@ -478,7 +495,140 @@ if(is_null($arm_ip)){
                 "helpUrl": ""
             }
         ]);
+        // สร้างบล็อกสำหรับ repeat loop ที่ให้เลือก true หรือ false
+        Blockly.defineBlocksWithJsonArray([{
+            "type": "controls_repeat_boolean",
+            "message0": "repeat while %1",
+            "args0": [
+                {
+                    "type": "field_dropdown",
+                    "name": "CONDITION",
+                    "options": [
+                        ["true", "TRUE"],
+                        ["false", "FALSE"]
+                    ]
+                }
+            ],
+            "message1": "do %1",
+            "args1": [
+                {
+                    "type": "input_statement",
+                    "name": "DO"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 120,
+            "tooltip": "Repeat a set of statements while the condition is true or false",
+            "helpUrl": ""
+        }]);
+     // การแปลงบล็อก 'if' เป็นโค้ด JavaScript
+     Blockly.JavaScript['controls_if_high_low'] = function(block) {
+            var input = Blockly.JavaScript.valueToCode(block, 'INPUT', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var state = block.getFieldValue('STATE');
+            
+            // ตรวจสอบเงื่อนไขที่เลือก (HIGH หรือ LOW)
+            var condition = (state === 'HIGH') ? `${input} === 1` : `${input} === 0`;
+            
+            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `if (${condition}) {\n${statements_do}}\n`;
+            return code;
+        };
 
+        // การแปลงบล็อก repeat loop เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_repeat_ext'] = function(block) {
+            var repeats = Blockly.JavaScript.valueToCode(block, 'TIMES', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `for (var i = 0; i < ${repeats}; i++) {\n${branch}}\n`;
+            return code;
+        };
+
+        // การแปลงบล็อก Input เป็นโค้ด JavaScript
+        Blockly.JavaScript['input_block_number'] = function(block) {
+            var inputValue = block.getFieldValue('INPUT_VALUE');
+            var code = `${inputValue}`;
+            return [code, Blockly.JavaScript.ORDER_ATOMIC];
+        };
+
+        // การแปลงบล็อก Output เป็นโค้ด JavaScript
+        Blockly.JavaScript['output_block'] = function(block) {
+            var outputValue = Blockly.JavaScript.valueToCode(block, 'OUTPUT_VALUE', Blockly.JavaScript.ORDER_ATOMIC);
+            var outputType = block.getFieldValue('OUTPUT_TYPE');
+
+            // ตรวจสอบว่าผู้ใช้เลือก 'int' หรือ 'on/off'
+            var code = '';
+            if (outputType === 'INT') {
+                code = `console.log(${outputValue});\n`; // สำหรับ output เป็นจำนวนเต็ม (int)
+            } else if (outputType === 'ONOFF') {
+                var onOffValue = (outputValue == 1) ? 'ON' : 'OFF'; // แปลงค่าเป็น ON หรือ OFF
+                code = `console.log("${onOffValue}");\n`;
+            }
+            return code;
+        };
+        // การแปลงบล็อก 'while loop' เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_whileUntil'] = function(block) {
+            var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'false';
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            
+            var code = `while (${condition}) {\n${branch}}\n`;
+            return code;
+        };
+        // การแปลงบล็อก while loop เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_while'] = function(block) {
+            var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_NONE) || 'false';
+            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `while (${condition}) {\n${statements_do}}\n`;
+            return code;
+        };
+
+        // การแปลงบล็อก 'for loop' เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_for'] = function(block) {
+            var variable = Blockly.JavaScript.variableDB_.getName(block.getFieldValue('VAR'), Blockly.VARIABLE_CATEGORY_NAME);
+            var from = Blockly.JavaScript.valueToCode(block, 'FROM', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var to = Blockly.JavaScript.valueToCode(block, 'TO', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+            var by = Blockly.JavaScript.valueToCode(block, 'BY', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+            
+            var branch = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `for (var ${variable} = ${from}; ${variable} <= ${to}; ${variable} += ${by}) {\n${branch}}\n`;
+            return code;
+        };
+        // การแปลงบล็อก if input high/low do else เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_if_input_high_low'] = function(block) {
+            var input = Blockly.JavaScript.valueToCode(block, 'INPUT', Blockly.JavaScript.ORDER_ATOMIC) || '""';
+            var compareValue = block.getFieldValue('COMPARE_VALUE');
+            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+            var statements_else = Blockly.JavaScript.statementToCode(block, 'ELSE');
+            
+            // แปลงค่า HIGH เป็น 1 และ LOW เป็น 0
+            var compareValueNumber = (compareValue === 'HIGH') ? '1' : '0';
+            var code = `if (${input} == ${compareValueNumber}) {\n${statements_do}} else {\n${statements_else}}\n`;
+            return code;
+        };
+
+
+        Blockly.JavaScript['gripper_value_control'] = function(block) {
+            var gripper = block.getFieldValue('GRIPPER');
+            var code = `sendGripperValueCommand(${gripper});\n`;
+            return code;
+        };
+
+        Blockly.JavaScript['gripper_on_off_control'] = function(block) {
+            var gripperState = block.getFieldValue('GRIPPER_STATE');
+            var gripperValue = gripperState === "OPEN" ? 0 : 180; // เปิดเป็น 0 และปิดเป็น 180
+            var code = `sendGripperValueCommand(${gripperValue});\n`;
+            return code;
+        };
+
+        Blockly.JavaScript['delay_block'] = function(block) {
+            var delay = block.getFieldValue('DELAY');
+            var code = `sendDelayCommand(${delay});\n`;
+            return code;
+        };
+
+        Blockly.JavaScript['home_position'] = function(block) {
+            var code = `sendHomePositionCommand();\n`;
+            return code;
+        };
         // การแปลงบล็อก 'move_arm' เป็นโค้ด JavaScript
         Blockly.JavaScript['move_arm'] = function(block) {
             var mode = block.getFieldValue('MODE');
@@ -490,6 +640,13 @@ if(is_null($arm_ip)){
             } else if (mode === 'IK') {
                 code = `sendMoveCommand(${values});\n`;
             }
+            return code;
+        };
+        // การแปลงบล็อก repeat while true/false เป็นโค้ด JavaScript
+        Blockly.JavaScript['controls_repeat_boolean'] = function(block) {
+            var condition = block.getFieldValue('CONDITION') === 'TRUE';
+            var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+            var code = `while (${condition}) {\n${statements_do}}\n`;
             return code;
         };
 
@@ -614,7 +771,24 @@ function sendMoveCommand(theta1, theta2, theta3, speed, acceleration,mode) {
 
    
 }
+function sendForCommand(theta1, theta2, theta3) {
+    console.log("sendMoveCommand");
+    console.log(esp32IP);
+    let txt = `http://${esp32IP}/for?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}`;
+    console.log(txt);
 
+
+    fetch(txt, {
+            method: 'GET',
+            mode: 'no-cors'
+        }).then(response => {
+            console.log("Command sent successfully!");
+        }).catch(error => {
+            console.error("Failed to send command:", error);
+        });
+
+   
+}
 // ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
 function sendGripperValueCommand(gripperValue) {
 
@@ -632,6 +806,32 @@ function sendGripperValueCommand(gripperValue) {
 function sendDelayValueCommand(DelayValue) {
 
 let  url = `http://${esp32IP}/delay?time=${DelayValue}`
+fetch(url, {
+    method: 'GET',
+    mode: 'no-cors'
+}).then(response => {
+    console.log("Command sent successfully!");
+}).catch(error => {
+    console.error("Failed to send command:", error);
+});
+}
+
+function sendzeroValueCommand() {
+
+let  url = `http://${esp32IP}/zero`
+fetch(url, {
+    method: 'GET',
+    mode: 'no-cors'
+}).then(response => {
+    console.log("Command sent successfully!");
+}).catch(error => {
+    console.error("Failed to send command:", error);
+});
+}
+
+function sendhomeValueCommand() {
+
+let  url = `http://${esp32IP}/zero`
 fetch(url, {
     method: 'GET',
     mode: 'no-cors'
@@ -676,7 +876,23 @@ function executeCommands(commandObject) {
             const gripperValue = commandObject[i].gripperState === "OPEN" ? 0 : 180;
             sendGripperValueCommand(gripperValue);
             break;
-
+        case 'set_zero':
+            sendzeroValueCommand();
+            break;   
+        case 'home_position':
+            sendzeroValueCommand();
+            break;  
+        case 'controls_for':
+            sendForCommand(commandObject[i].inputs.BY.fields.INT,commandObject[i].inputs.FROM.fields.INT,commandObject[i].inputs.TO.fields.INT);
+            break;  //   
+        case 'controls_if_high_low':
+            console.log(commandObject[i].inputs.INPUT.fields.INT);
+            console.log(commandObject[i].fields.STATE);
+            break;  // 
+        case 'output_block':
+            console.log(commandObject[i].inputs.OUTPUT_VALUE.fields.INT);
+            console.log(commandObject[i].fields.STATE);
+            break;  //                           
         default:
            // console.warn("Unknown command type:", commandObject.type);
     }
