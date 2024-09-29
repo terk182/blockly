@@ -883,7 +883,7 @@ async function executeCommands(commandObject) {
             return; // หยุดการดำเนินการจนกว่าจะครบเวลาหน่วงเวลา
 
         case 'gripper_value_control':
-            await sendGripperValueCommand(commandObject[i].gripper);
+            await sendGripperValueCommand(commandObject[i].fields.GRIPPER);
             break;
 
         case 'gripper_on_off_control':
