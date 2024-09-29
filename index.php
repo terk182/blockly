@@ -830,6 +830,20 @@ fetch(url, {
     console.error("Failed to send command:", error);
 });
 }
+
+// ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
+function sendiftValueCommand(input,state) {
+
+let  url = `http://${esp32IP}/if?io=${input}&state=${state}`
+fetch(url, {
+    method: 'GET',
+    mode: 'no-cors'
+}).then(response => {
+    console.log("Command sent successfully!");
+}).catch(error => {
+    console.error("Failed to send command:", error);
+});
+}
 function sendzeroValueCommand() {
 
 let  url = `http://${esp32IP}/zero`
@@ -902,8 +916,8 @@ async function executeCommands(commandObject) {
         case 'controls_if_high_low':
                 // ตรวจสอบค่าที่กำหนดว่าเป็น HIGH หรือ LOW
                 let state = commandObject[i].fields.STATE;
-                let input = commandObject[i].inputs.INPUT.fields.INT || 0; // รับค่า input
-
+                let input = commandObject[i].inputs.INPUT.fields.INT ; // รับค่า input
+                sendiftValueCommand(input,state);
                 // แปลง HIGH เป็น 1 และ LOW เป็น 0 เพื่อให้ตรงกับเงื่อนไข
                 let conditionMet = (state === 'HIGH' && input === 1) || (state === 'LOW' && input === 0);
 
