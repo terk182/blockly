@@ -774,7 +774,7 @@ function sendMoveCommand(theta1, theta2, theta3, speed, acceleration,mode) {
    
 }
 function sendForCommand(theta1, theta2, theta3) {
-    console.log("sendMoveCommand");
+  
     console.log(esp32IP);
     let txt = `http://${esp32IP}/for?theta1=${theta1}&theta2=${theta2}&theta3=${theta3}`;
     console.log(txt);
@@ -845,7 +845,7 @@ fetch(url, {
 
 function sendhomeValueCommand() {
 
-let  url = `http://${esp32IP}/zero`
+let  url = `http://${esp32IP}/home`
 fetch(url, {
     method: 'GET',
     mode: 'no-cors'
@@ -894,7 +894,7 @@ async function executeCommands(commandObject) {
             await sendzeroValueCommand();
             break;   
         case 'home_position':
-            await sendzeroValueCommand();
+            await sendhomeValueCommand();
             break;  
         case 'controls_for':
             await sendForCommand(commandObject[i].inputs.BY.fields.INT,commandObject[i].inputs.FROM.fields.INT,commandObject[i].inputs.TO.fields.INT);
