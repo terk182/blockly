@@ -887,7 +887,7 @@ async function executeCommands(commandObject) {
             break;
 
         case 'gripper_on_off_control':
-            const gripperValue = commandObject[i].gripperState === "OPEN" ? 0 : 180;
+            const gripperValue = commandObject[i].fields.GRIPPER_STATE === "OPEN" ? 0 : 180;
             await sendGripperValueCommand(gripperValue);
             break;
         case 'set_zero':
