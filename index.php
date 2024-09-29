@@ -914,7 +914,7 @@ async function executeCommands(commandObject) {
             break;  // 
         case 'output_block':
             
-            await sendOutputValueCommand(commandObject[i].fields.INT,commandObject[i].fields.STATE);
+            await sendOutputValueCommand(commandObject[i].inputs.OUTPUT_VALUE.fields.INT,commandObject[i].fields.STATE);
             break;  //                           
         case 'controls_repeat_ext':
             let times = commandObject[i].inputs.TIMES.fields.INT;
