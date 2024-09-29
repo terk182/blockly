@@ -405,16 +405,15 @@ if(is_null($arm_ip)){
         // สร้างบล็อกสำหรับ if-else ที่ตรวจสอบ input เป็น HIGH หรือ LOW
         Blockly.defineBlocksWithJsonArray([{
             "type": "controls_if_input_high_low",
-            "message0": "if input %1 = %2",
+            "message0": "if input %1 is %2 then",
             "args0": [
                 {
                     "type": "input_value",
-                    "name": "INPUT",
-                    "check": "String"
+                    "name": "INPUT"
                 },
                 {
                     "type": "field_dropdown",
-                    "name": "COMPARE_VALUE",
+                    "name": "STATE",
                     "options": [
                         ["HIGH", "HIGH"],
                         ["LOW", "LOW"]
@@ -428,6 +427,7 @@ if(is_null($arm_ip)){
                     "name": "DO"
                 }
             ],
+           
             "message2": "else %1",
             "args2": [
                 {
