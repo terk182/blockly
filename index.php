@@ -762,14 +762,14 @@ function sendMoveCommand(theta1, theta2, theta3, speed, acceleration,mode) {
     console.log(txt);
 
 
-    fetch(txt, {
-            method: 'GET',
-            mode: 'no-cors'
-        }).then(response => {
-            console.log("Command sent successfully!");
-        }).catch(error => {
-            console.error("Failed to send command:", error);
-        });
+    // fetch(txt, {
+    //         method: 'GET',
+    //         mode: 'no-cors'
+    //     }).then(response => {
+    //         console.log("Command sent successfully!");
+    //     }).catch(error => {
+    //         console.error("Failed to send command:", error);
+    //     });
 
    
 }
@@ -804,6 +804,12 @@ function sendGripperValueCommand(gripperValue) {
             console.error("Failed to send command:", error);
         });
 }
+
+function sendDelayCommand(delay) {
+            setTimeout(() => {
+                sendDelayValueCommand(delay);
+            }, delay);
+        }
 // ฟังก์ชันสำหรับส่งคำสั่งการควบคุม Gripper ไปยัง ESP32
 function sendDelayValueCommand(DelayValue) {
 
@@ -893,7 +899,7 @@ async function executeCommands(commandObject) {
             break;
         case 'delay_block':
             const { DELAY } = commandObject[i].fields;
-            await sendDelayValueCommand(DELAY);
+            await sendDelayCommand(DELAY);
             return; // หยุดการดำเนินการจนกว่าจะครบเวลาหน่วงเวลา
 
         case 'gripper_value_control':
